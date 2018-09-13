@@ -22,8 +22,12 @@ void uart_task(void* taskParmPtr)
 	}
 
 	uartInit( UART_USADA, UART_USADA_SPEED);
+	
 	uartRxInterruptCallbackSet( UART_USADA, uartRxCallback);
 	uartTxInterruptCallbackSet( UART_USADA, uartTxCallback);
+	
+	//uartRxInterruptCallbackSet( UART_USB, onRx );
+	//uartRxInterruptSet( UART_USB, true );	
 
 	while (TRUE)
 	{

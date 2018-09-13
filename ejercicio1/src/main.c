@@ -75,6 +75,7 @@ int main(void)
 	queues_init();
 	gpioWrite(LEDG, ON); 	// Led indicador programa corriendo	
 	uart_task_create();		// Crear tarea UART
+	Manejador_paquete_create(); // Crear tarea para manejar paquetes
 	
 	limpiarPaquete(&paquete);
 	limpiarPaquete(&paqueteAModificar);
@@ -82,14 +83,7 @@ int main(void)
 	memoria_para_pool_1,
 	sizeof(memoria_para_pool_1),sizeof paquete);  /* Bloques de 10 bytes cada uno */
 
-	xTaskCreate(
-			myTask,                     // Funcion de la tarea a ejecutar
-			(const char *)"myTask",     // Nombre de la tarea como String amigable para el usuario
-			configMINIMAL_STACK_SIZE*2, // Cantidad de stack de la tarea
-			0,                          // Parametros de tarea
-			tskIDLE_PRIORITY+1,         // Prioridad de la tarea
-			0                           // Puntero a la tarea creada en el sistema
-	);
+	
 	
 	vTaskStartScheduler();	// Iniciar scheduler
 
@@ -117,7 +111,6 @@ static void queues_init(void)
 
 static void uart_task_create(void)
 {
-	// Crear tarea medicion de tiempos entre flancos
 	xTaskCreate(uart_task,                     // Funcion de la tarea a ejecutar
 			(const char *) "tarea_uart", // Nombre de la tarea como String amigable para el usuario
 			UART_TASK_STACK_SIZE, // Cantidad de stack de la tarea
@@ -127,7 +120,19 @@ static void uart_task_create(void)
 			);
 }
 
-void onRx( void *noUsado )
+static void Manejador_paquete_create(void)
+{
+	xTaskCreate(
+			Manejador_Paquete,                     // Funcion de la tarea a ejecutar
+			(const char *)"Manejador_Paquete",     // Nombre de la tarea como String amigable para el usuario
+			configMINIMAL_STACK_SIZE*2, // Cantidad de stack de la tarea
+			0,                          // Parametros de tarea
+			tskIDLE_PRIORITY+1,         // Prioridad de la tarea
+			0                           // Puntero a la tarea creada en el sistema
+	);
+}
+
+void onRx( void *noUsado ) // Callback 1
 {
 	char c = uartRxRead( UART_USB );
     agregarCaracter(&paquete,&c);
@@ -135,12 +140,12 @@ void onRx( void *noUsado )
    //printf( "Recibimos <<%c>> por UART\r\n", c );
 }
 
-void myTask( void* taskParmPtr )
+void Manejador_Paquete( void* taskParmPtr ) // Callback 2
 {
-	// ---------- INICIALIZACION ------------------------------
-	uartConfig( UART_USB, 115200 );
-	uartRxInterruptCallbackSet( UART_USB, onRx );
-	uartRxInterruptSet( UART_USB, true );
+	// ---------- Movido a uart_task ------------------------------
+	//uartConfig( UART_USB, 115200 );
+	//uartRxInterruptCallbackSet( UART_USB, onRx );
+	//uartRxInterruptSet( UART_USB, true );
 
 	char msg[50+1];
 	sprintf( msg, "Numero de elementos: %d", QMPool_getMin(&mem_pool_1) );
@@ -153,7 +158,6 @@ void myTask( void* taskParmPtr )
 
 		      //toString(&paquete);
 		      //toStringModificado(&paqueteAModificar);
-
 
 		      char * block1 = QMPool_get(&mem_pool_1, 0U);
 		      snprintf( block1,sizeof paquete, "%d%d%d%s%d",paqueteAModificar.stx,paqueteAModificar.op,paqueteAModificar.tam,paqueteAModificar.datos,paqueteAModificar.etx );
