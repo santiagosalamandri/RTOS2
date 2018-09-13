@@ -1,2 +1,3 @@
-# RTOS2
-Ejercicios de RTOS2
+# RTOS2_CESE2018
+
+Repositorio con trabajos practicos de RTOS 2.
