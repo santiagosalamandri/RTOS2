@@ -110,7 +110,6 @@ void minusculizar(Paquete *original,Paquete *minusculizado){
     }
     else
       minusculizado->datos[i]=original->datos[i];
-
     }
 
 }

@@ -6,7 +6,10 @@ static tarea_uart_rx_callback_t rx_callback;
 
 static void uartRxCallback(void);
 static void uartTxCallback(void);
-static void uartSend(ascii_message_t ascii_message);
+static void uartSend(ascii_message_t* ascii_message);
+extern void onRx( void );
+
+
 
 // Implementacion de funcion de la tarea
 void uart_task(void* taskParmPtr)
@@ -23,11 +26,11 @@ void uart_task(void* taskParmPtr)
 
 	uartInit( UART_USADA, UART_USADA_SPEED);
 	
-	uartRxInterruptCallbackSet( UART_USADA, uartRxCallback);
-	uartTxInterruptCallbackSet( UART_USADA, uartTxCallback);
+	//uartRxInterruptCallbackSet( UART_USADA, uartRxCallback);
+	//uartTxInterruptCallbackSet( UART_USADA, uartTxCallback);
 	
-	//uartRxInterruptCallbackSet( UART_USB, onRx );
-	//uartRxInterruptSet( UART_USB, true );	
+	uartRxInterruptCallbackSet( UART_USB, onRx );
+	uartRxInterruptSet( UART_USB, true );
 
 	while (TRUE)
 	{
