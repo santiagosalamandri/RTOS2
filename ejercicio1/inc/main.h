@@ -1,5 +1,3 @@
-#pragma once
-
 
 // Includes de FreeRTOS
 #include "FreeRTOSConfig.h"
@@ -13,8 +11,7 @@
 #include "qmpool.h"
 #include "paquete.h"
 
-
-#include "ISR.h"
+//#include "ISR.h"
 #include "tarea_uart.h"
 
 
