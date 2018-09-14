@@ -1,4 +1,3 @@
-
 #include "tarea_mayusculizador.h"
 
 static ascii_message_t ascii_message;
@@ -9,23 +8,25 @@ static void mayusculizar(ascii_message_t ascii_message);
 void mayusculizador_task(void* taskParmPtr)
 {
 	// ---------- CONFIGURACIONES ------------------------------
+	Paquete mensaje;
 	// ---------- REPETIR POR SIEMPRE --------------------------
 	while (TRUE)
 	{
-		xQueueReceive(queMayusculizar, &ascii_message, portMAX_DELAY);
-		mayusculizar(&ascii_message);
-		xQueueSend(queMayusculizados, &ascii_message, portMAX_DELAY);
+		xQueueReceive(queMayusculizar, &mensaje, portMAX_DELAY);
+		mayusculizar(mensaje);
+		xQueueSend(queMayusculizados, &mensaje, portMAX_DELAY);
 	}
 }
 
-static void mayusculizar(ascii_message_t* ascii_message)
+static void mayusculizar(Paquete *original) // USAR ESTA
 {
-	for (uint32_t i = 0; i < ascii_message->length; i++)
-	{
-		if (ascii_message->dataPtr[i] >= 97 && ascii_message->dataPtr[i] <= 122)
-		{
-			ascii_message->dataPtr[i] = ascii_message->dataPtr[i] - DIFERENCIA_ASCII_MINUSCULA_MAYUSCULA;
-		}
+	int desp='a'-'A';
 
+	for (size_t i = 0; i < original->tam; i++) {
+		if(original->datos[i]>='A'&& original->datos[i]<='Z'){
+			original->datos[i]=original->datos[i]-desp;;
+		}
+		else
+			original->datos[i]=original->datos[i];
 	}
 }

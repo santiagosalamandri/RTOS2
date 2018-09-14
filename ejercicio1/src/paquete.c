@@ -111,7 +111,6 @@ void minusculizar(Paquete *original,Paquete *minusculizado){
     else
       minusculizado->datos[i]=original->datos[i];
     }
-
 }
 
 
@@ -119,10 +118,12 @@ void realizarOperacion(Paquete *original,Paquete *aModificar){
 
   switch (original->op) {
     case MAYUSCULA:
-    mayusculizar(original,aModificar);
+    //mayusculizar(original,aModificar);
+    	xQueueSend(queMayusculizar, &paquete, portMAX_DELAY);
       break;
     case MINUSCULA:
-    minusculizar(original,aModificar);
+   // minusculizar(original,aModificar);
+    	xQueueSend(queMinusculizar, &paquete, portMAX_DELAY); // No llamar a la funcion, sino encolar el dato
       break;
     case STACK:
       break;
