@@ -1,21 +1,23 @@
-#pragma once
+#ifndef comunicacion_tareas_h
+#define comunicacion_tareas_h
 
 #include "sapi.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+#include "qmpool.h"
+#include "procesador_paquetes.h"
 
 #define QUEQUE_NO_WAIT	0
 
+#define BLOQUE_POOL_CHICO				(64 + HEADER_TAIL_LENGTH)
+#define BLOQUE_POOL_MEDIANO				(128 + HEADER_TAIL_LENGTH)
+#define BLOQUE_POOL_GRANDE				(256 + HEADER_TAIL_LENGTH)
 
-
-typedef struct
-{
-	uint32_t length;
-	uint8_t* dataPtr;
-}ascii_message_t;
-
+#define CANTIDAD_POOL_CHICO				64
+#define CANTIDAD_POOL_MEDIANO			32
+#define CANTIDAD_POOL_GRANDE			16
 
 extern QueueHandle_t queMayusculizar;
 extern QueueHandle_t queMayusculizados;
@@ -23,5 +25,14 @@ extern QueueHandle_t queMayusculizados;
 extern QueueHandle_t queMinusculizar;
 extern QueueHandle_t queMinusculizados;
 
-
 extern QueueHandle_t queEnvioUART;
+
+typedef struct {
+  uint8_t* buffer;
+} mensaje_entre_tareas_t;
+
+extern QMPool qmPoolChico, qmPoolMediano, qmPoolGrande;
+
+
+
+#endif

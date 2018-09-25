@@ -15,3 +15,14 @@ typedef void (*tarea_uart_rx_callback_t)(uint8_t dato);
 
 void uart_task(void* taskParmPtr);
 void setRxCallback(tarea_uart_rx_callback_t tarea_uart_rx_callback);
+
+
+
+
+typedef struct {
+  uint8_t stx;
+  operacion_t op;
+  uint8_t tam;
+  uint8_t* buffer;
+  uint8_t etx;
+}uart_tx_paquete;

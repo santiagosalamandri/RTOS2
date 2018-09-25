@@ -33,19 +33,20 @@
 /*==================[inlcusiones]============================================*/
 #include "main.h"
 /*==================[definiciones y macros]==================================*/
-DEBUG_PRINT_ENABLE;
+//DEBUG_PRINT_ENABLE
 #define CANTIDAD_PAQUETES 4
 #define OVERHEAD CANTIDAD_PAQUETES*2
 
-Paquete paquete;
-Paquete paqueteAModificar;
-
-QMPool mem_pool_1; /* Estructura de control del Pool */
-static uint8_t memoria_para_pool_1[(sizeof paquete)*CANTIDAD_PAQUETES+OVERHEAD]; /* Espacio de almacenamiento para el Pool */
-
 /*==================[definiciones de datos internos]=========================*/
 
+
+static uint8_t memoriaPoolChico[BLOQUE_POOL_CHICO * CANTIDAD_POOL_CHICO];
+static uint8_t memoriaPoolMediano[BLOQUE_POOL_MEDIANO * CANTIDAD_POOL_MEDIANO];
+static uint8_t memoriaPoolGrande[BLOQUE_POOL_GRANDE * CANTIDAD_POOL_GRANDE];
+
 /*==================[definiciones de datos externos]=========================*/
+
+QMPool qmPoolChico, qmPoolMediano, qmPoolGrande;
 
 QueueHandle_t queMayusculizar;
 QueueHandle_t queMayusculizados;
@@ -55,13 +56,13 @@ QueueHandle_t queEnvioUART;
 
 /*==================[declaraciones de funciones internas]====================*/
 
-/*==================[declaraciones de funciones externas]====================*/
-
-//static printFln_queue_message_t printFln_queue_message;
+static void pools_init(void);
 static void queues_init(void);
 static void uart_task_create(void);
-static void Manejador_paquete_create(void);
-static void onRx( void );
+static void mayusculizador_task_create(void);
+static void minusculizador_task_create(void);
+
+/*==================[declaraciones de funciones externas]====================*/
 
 /*==================[funcion principal]======================================*/
 
@@ -69,19 +70,23 @@ static void onRx( void );
 int main(void)
 {
 	// ---------- CONFIGURACIONES ------------------------------
-	
+
 	boardConfig(); 	// Inicializar y configurar la plataforma
+
 	queues_init();
+
+	pools_init();
+
+	proceso_init();
+
 	gpioWrite(LEDG, ON); 	// Led indicador programa corriendo	
-	//uart_task_create();		// Crear tarea UART
-	Manejador_paquete_create(); // Crear tarea para manejar paquetes
-	
-	limpiarPaquete(&paquete);
-	limpiarPaquete(&paqueteAModificar);
-	QMPool_init(&mem_pool_1,
-	memoria_para_pool_1,
-	sizeof(memoria_para_pool_1),sizeof paquete);  /* Bloques de 10 bytes cada uno */
-	
+
+	uart_task_create();		// Crear tarea UART
+
+	mayusculizador_task_create();
+
+	minusculizador_task_create();
+
 	vTaskStartScheduler();	// Iniciar scheduler
 
 	while ( TRUE)		// ---------- REPETIR POR SIEMPRE --------------------------
@@ -97,60 +102,20 @@ int main(void)
 
 /*==================[definiciones de funciones internas]=====================*/
 
-static void queues_init(void)
+static void pools_init(void)
 {
-	queMayusculizar = xQueueCreate(16, sizeof(ascii_message_t));
-	queMayusculizados = xQueueCreate(16, sizeof(ascii_message_t));
-	queMinusculizar = xQueueCreate(16, sizeof(ascii_message_t));
-	queMinusculizados = xQueueCreate(16, sizeof(ascii_message_t));
-	queEnvioUART = xQueueCreate(16, sizeof(ascii_message_t));
+	QMPool_init(&qmPoolChico, memoriaPoolChico, sizeof(memoriaPoolChico), BLOQUE_POOL_CHICO);
+	QMPool_init(&qmPoolMediano, memoriaPoolMediano, sizeof(memoriaPoolMediano), BLOQUE_POOL_MEDIANO);
+	QMPool_init(&qmPoolGrande, memoriaPoolGrande, sizeof(memoriaPoolGrande), BLOQUE_POOL_GRANDE);
 }
 
-void Manejador_Paquete( void* taskParmPtr ) // Callback 2
+static void queues_init(void)
 {
-	// ---------- Movido a uart_task ------------------------------
-	uartConfig( UART_USB, 115200 );
-	uartRxInterruptCallbackSet( UART_USB, onRx );
-	uartRxInterruptSet( UART_USB, true );
-
-	char msg[50+1];
-	sprintf( msg, "Numero de elementos: %d", QMPool_getMin(&mem_pool_1) );
-	debugPrintlnString( msg );
-
-	// ---------- REPETIR POR SIEMPRE --------------------------
-	while(TRUE) {
-		if(paquete.estado==COMPLETO){
-		      realizarOperacion(&paquete,&paqueteAModificar);
-
-		      toString(&paquete);
-		      toStringModificado(&paqueteAModificar);
-
-		      char * block1 = QMPool_get(&mem_pool_1, 0U);
-		      snprintf( block1,sizeof paquete, "%d%d%d%s%d",paqueteAModificar.stx,paqueteAModificar.op,paqueteAModificar.tam,paqueteAModificar.datos,paqueteAModificar.etx );
-		      printf("%s\n", block1 );
-		      QMPool_put(&mem_pool_1, block1);
-
-		      limpiarPaquete(&paqueteAModificar);
-		      limpiarPaquete(&paquete);
-		    }
-		/*
-		 char msg[50+1];
-			sprintf( msg, "Numero de elementos: %d", QMPool_getMin(&mem_pool_1) );
-			debugPrintlnString( msg );
-		//Solicito un bloque de memoria
-		char * block1 = QMPool_get(&mem_pool_1, 0U);
-		// Intercambia el estado del LEDB
-		gpioToggle( LEDB );
-		strncpy(block1, "Blink!", 10U);
-		debugPrintlnString( block1 );
-		//Libero el bloque de memoria
-		QMPool_put(&mem_pool_1, block1);
-		// Envia la tarea al estado bloqueado durante 500ms
-		*/
-		gpioToggle( LEDB );
-
-		vTaskDelay( 100 / portTICK_RATE_MS );
-	}
+	queMayusculizar = xQueueCreate(16, sizeof(mensaje_entre_tareas_t));
+	queMayusculizados = xQueueCreate(16, sizeof(mensaje_entre_tareas_t));
+	queMinusculizar = xQueueCreate(16, sizeof(mensaje_entre_tareas_t));
+	queMinusculizados = xQueueCreate(16, sizeof(mensaje_entre_tareas_t));
+	queEnvioUART = xQueueCreate(16, sizeof(mensaje_entre_tareas_t));
 }
 
 static void uart_task_create(void)
@@ -158,33 +123,33 @@ static void uart_task_create(void)
 	xTaskCreate(uart_task,                     // Funcion de la tarea a ejecutar
 			(const char *) "tarea_uart", // Nombre de la tarea como String amigable para el usuario
 			UART_TASK_STACK_SIZE, // Cantidad de stack de la tarea
-			0,                          // Parametros de tarea
+			procesarByteRecibido,                          // Parametros de tarea
 			UART_TASK_PRIORITY,         // Prioridad de la tarea
 			0                         // Puntero a la tarea creada en el sistema
 			);
 }
 
-static void Manejador_paquete_create(void)
+static void mayusculizador_task_create(void)
 {
-	xTaskCreate(
-			Manejador_Paquete,                     // Funcion de la tarea a ejecutar
-			(const char *)"Manejador_Paquete",     // Nombre de la tarea como String amigable para el usuario
-			configMINIMAL_STACK_SIZE*2, // Cantidad de stack de la tarea
+	xTaskCreate(mayusculizador_task,                     // Funcion de la tarea a ejecutar
+			(const char *) "tarea_mayusculizador", // Nombre de la tarea como String amigable para el usuario
+			MAYUSCULIZADOR_TASK_STACK_SIZE, // Cantidad de stack de la tarea
 			0,                          // Parametros de tarea
-			tskIDLE_PRIORITY+1,         // Prioridad de la tarea
-			0                           // Puntero a la tarea creada en el sistema
-	);
+			MAYUSCULIZADOR_TASK_PRIORITY,         // Prioridad de la tarea
+			0                         // Puntero a la tarea creada en el sistema
+			);
 }
 
-
-void onRx( void ) // Callback 1
+static void minusculizador_task_create(void)
 {
-	char c = uartRxRead( UART_USB );
-    agregarCaracter(&paquete,&c);
-
-   //printf( "Recibimos <<%c>> por UART\r\n", c );
+	xTaskCreate(minusculizador_task,                     // Funcion de la tarea a ejecutar
+			(const char *) "tarea_minusculizador", // Nombre de la tarea como String amigable para el usuario
+			MINUSCULIZADOR_TASK_STACK_SIZE, // Cantidad de stack de la tarea
+			0,                          // Parametros de tarea
+			MINUSCULIZADOR_TASK_PRIORITY,         // Prioridad de la tarea
+			0                         // Puntero a la tarea creada en el sistema
+			);
 }
-
 
 /*==================[definiciones de funciones externas]=====================*/
 

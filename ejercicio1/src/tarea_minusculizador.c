@@ -1,32 +1,32 @@
 #include "tarea_minusculizador.h"
 
-static ascii_message_t ascii_message;
-
-static void minusculizar(ascii_message_t ascii_message);
+static void minusculizar(mensaje_entre_tareas_t* mensajeEntreTareas);
 
 // Implementacion de funcion de la tarea
 void minusculizador_task(void* taskParmPtr)
 {
+	mensaje_entre_tareas_t mensajeEntreTareas;
 	// ---------- CONFIGURACIONES ------------------------------
-	Paquete mensaje;
+
 	// ---------- REPETIR POR SIEMPRE --------------------------
 	while (TRUE)
 	{
-		xQueueReceive(queMinusculizar, &mensaje, portMAX_DELAY);
-		minusculizar(&mensaje);
-		xQueueSend(queMinusculizados, &mensaje, portMAX_DELAY);
+		xQueueReceive(queMinusculizar, &mensajeEntreTareas, portMAX_DELAY);
+		minusculizar(&mensajeEntreTareas);
+		xQueueSend(queMinusculizados, &mensajeEntreTareas, portMAX_DELAY);
 	}
 }
 
-static void minusculizar(Paquete *original)
+static void minusculizar(mensaje_entre_tareas_t* mensajeEntreTareas)
 {
-	int desp='a'-'A';
 
-	for (size_t i = 0; i < original->tam; i++) {
-		if(original->datos[i]>='A'&&original->datos[i]<='Z'){
-			original->datos[i]=original->datos[i]+desp;;
+	for (uint32_t dataIndex = HEADER_LENGTH; dataIndex < mensajeEntreTareas->buffer[TAM_POS]; dataIndex++)
+	{
+
+		if (mensajeEntreTareas->buffer[dataIndex] >= 65 && mensajeEntreTareas->buffer[dataIndex] <= 90)
+		{
+			mensajeEntreTareas->buffer[dataIndex] = mensajeEntreTareas->buffer[dataIndex] + DIFERENCIA_ASCII_MINUSCULA_MAYUSCULA;
 		}
-		else
-			original->datos[i]=original->datos[i];
+
 	}
 }

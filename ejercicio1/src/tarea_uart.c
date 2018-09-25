@@ -1,71 +1,80 @@
 #include "tarea_uart.h"
 
-static ascii_message_t ascii_message;
-static SemaphoreHandle_t tx_semaforo;
 static tarea_uart_rx_callback_t rx_callback;
 
 static void uartRxCallback(void);
-static void uartTxCallback(void);
-static void uartSend(ascii_message_t* ascii_message);
-extern void onRx( void );
+void uartTxCallback(void);
+static void uartTxSendByte(uint8_t byte);
+static void uartSend(uint8_t* buffer);
 
-
+static uint32_t txIndex;
+static mensaje_entre_tareas_t mensajeParaTx;
 
 // Implementacion de funcion de la tarea
 void uart_task(void* taskParmPtr)
 {
+
 	// ---------- CONFIGURACIONES ------------------------------
 	// ---------- REPETIR POR SIEMPRE --------------------------
 
-	tx_semaforo = xSemaphoreCreateBinary();
-
-	if (tx_semaforo == NULL)
-	{
-		// implementar tratamiento de error
-	}
+	rx_callback = (tarea_uart_rx_callback_t) taskParmPtr;
 
 	uartInit( UART_USADA, UART_USADA_SPEED);
-	
-	//uartRxInterruptCallbackSet( UART_USADA, uartRxCallback);
-	//uartTxInterruptCallbackSet( UART_USADA, uartTxCallback);
-	
-	uartRxInterruptCallbackSet( UART_USB, onRx );
-	uartRxInterruptSet( UART_USB, true );
+
+	uartRxInterruptCallbackSet( UART_USADA, (callBackFuncPtr_t) uartRxCallback);
+	uartTxInterruptCallbackSet( UART_USADA, (callBackFuncPtr_t) uartTxCallback);
+
+	uartRxInterruptSet(UART_USB, true);
+	uartTxInterruptSet(UART_USB, true);
 
 	while (TRUE)
 	{
-		xQueueReceive(queEnvioUART, &ascii_message, portMAX_DELAY);
-		uartSend(&ascii_message);
+		xQueueReceive(queEnvioUART, &mensajeParaTx, portMAX_DELAY);
+		uartSend(mensajeParaTx.buffer);
 	}
 }
 
-void setRxCallback(tarea_uart_rx_callback_t tarea_uart_rx_callback)
+static void uartSend(uint8_t* buffer)
 {
-	rx_callback = tarea_uart_rx_callback;
+	txIndex = 0;
+
+	uartTxSendByte(buffer[0]);
 }
 
-static void uartSend(ascii_message_t* ascii_message)
+static uint8_t uartGetTxData(uint8_t* txData)
 {
-	uint32_t txIndex = 0;
-	while (txIndex < ascii_message->length)
+	uint8_t result = 0;
+
+	if (txIndex < (mensajeParaTx.buffer[TAM_POS] + HEADER_TAIL_LENGTH))
 	{
-		uartTxWrite(UART_USADA, ascii_message->dataPtr[txIndex]);
-		xSemaphoreTake(tx_semaforo, portMAX_DELAY);
+		*txData = mensajeParaTx.buffer[txIndex];
 		txIndex++;
+		result = 1;
 	}
+
+	return result;
+}
+
+static void uartTxSendByte(uint8_t byte)
+{
+	uartTxWrite(UART_USADA, byte);
 }
 
 static void uartRxCallback(void)
 {
+
 	if (rx_callback != NULL)
 	{
 		rx_callback(uartRxRead(UART_USADA));
 	}
 }
 
-static void uartTxCallback(void)
+void uartTxCallback(void)
 {
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	xSemaphoreGiveFromISR(tx_semaforo, &xHigherPriorityTaskWoken);
-	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+	uint8_t txData;
+
+	if (uartGetTxData(&txData))
+	{
+		uartTxSendByte(txData);
+	}
 }

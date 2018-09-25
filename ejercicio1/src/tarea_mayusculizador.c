@@ -1,32 +1,31 @@
 #include "tarea_mayusculizador.h"
 
-static ascii_message_t ascii_message;
-
-static void mayusculizar(ascii_message_t ascii_message);
+static void mayusculizar(mensaje_entre_tareas_t* mensajeEntreTareas);
 
 // Implementacion de funcion de la tarea
 void mayusculizador_task(void* taskParmPtr)
 {
+	mensaje_entre_tareas_t mensajeEntreTareas;
 	// ---------- CONFIGURACIONES ------------------------------
-	Paquete mensaje;
+
 	// ---------- REPETIR POR SIEMPRE --------------------------
 	while (TRUE)
 	{
-		xQueueReceive(queMayusculizar, &mensaje, portMAX_DELAY);
-		mayusculizar(mensaje);
-		xQueueSend(queMayusculizados, &mensaje, portMAX_DELAY);
+		xQueueReceive(queMayusculizar, &mensajeEntreTareas, portMAX_DELAY);
+		mayusculizar(&mensajeEntreTareas);
+		xQueueSend(queMayusculizados, &mensajeEntreTareas, portMAX_DELAY);
 	}
 }
 
-static void mayusculizar(Paquete *original) // USAR ESTA
+static void mayusculizar(mensaje_entre_tareas_t* mensajeEntreTareas) // USAR ESTA
 {
-	int desp='a'-'A';
+	for (uint32_t dataIndex = HEADER_LENGTH; dataIndex < mensajeEntreTareas->buffer[TAM_POS]; dataIndex++)
+	{
 
-	for (size_t i = 0; i < original->tam; i++) {
-		if(original->datos[i]>='A'&& original->datos[i]<='Z'){
-			original->datos[i]=original->datos[i]-desp;;
+		if (mensajeEntreTareas->buffer[dataIndex] >= 97 && mensajeEntreTareas->buffer[dataIndex] <= 122)
+		{
+			mensajeEntreTareas->buffer[dataIndex] = mensajeEntreTareas->buffer[dataIndex] - DIFERENCIA_ASCII_MINUSCULA_MAYUSCULA;
 		}
-		else
-			original->datos[i]=original->datos[i];
+
 	}
 }

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef minusculizador_h
+#define minusculizador_h
 
 #include "comunicacionEntreTareas.h"
 #include "sapi.h"
@@ -8,4 +9,6 @@
 
 #define DIFERENCIA_ASCII_MINUSCULA_MAYUSCULA	32
 
-void mayusculizador_task(void* taskParmPtr);
+void minusculizador_task(void* taskParmPtr);
+
+#endif
