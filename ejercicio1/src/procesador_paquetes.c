@@ -1,19 +1,20 @@
 #include "procesador_paquetes.h"
 
-static void realizarOperacion(uint8_t* buffer);
-static QMPool* getPool(uint32_t size);
+static void realizarOperacion(uint8_t* buffer, QMPool* pool);
 
 static header_t headerEnProceso;
 
 static estado_proceso_rx_t estado_proceso_rx;
 
 QMPool* pool = NULL;
-uint8_t* buffer = NULL;
-uint16_t bufferIndex;
+uint8_t* buffer;
 
 void procesarByteRecibido(uint8_t dato)
 {
-	gpioToggle( LEDB );
+	static uint16_t bufferIndex;
+	uint8_t sprintfLength;
+
+	gpioToggle(LED3);
 
 	switch (estado_proceso_rx)
 	{
@@ -35,9 +36,24 @@ void procesarByteRecibido(uint8_t dato)
 			headerEnProceso.op = dato;
 			estado_proceso_rx = ESPERANDO_TAM;
 		}
-		else if (dato <= APP)
+		else if (dato == STACK || dato == HEAP)
 		{
-			// comando de operación, NO debo esperar datos a convertir ni longitud
+			headerEnProceso.op = dato;
+
+			pool = getPool(MAX_UINT32_STRING_LENGTH + HEADER_TAIL_LENGTH);
+			buffer = (uint8_t*) QMPool_get(pool, 0);
+
+			if (buffer != NULL)
+			{
+				buffer[STX_POS] = headerEnProceso.stx;
+				buffer[OP_POS] = headerEnProceso.op;
+				estado_proceso_rx = ESPERANDO_ETX;
+			}
+			else
+			{
+				// no hay lugar para almacenar los datos a recibir
+				estado_proceso_rx = ESPERANDO_STX;
+			}
 
 		}
 		else
@@ -57,13 +73,13 @@ void procesarByteRecibido(uint8_t dato)
 		else
 		{
 			// se recibio un tamaño correcto
-			//pool = getPool(headerEnProceso.tam + HEADER_TAIL_LENGTH);
-			buffer = QMPool_get(&qmPoolChico, 0);
-			/*if (buffer != NULL)
+			pool = getPool(headerEnProceso.tam + HEADER_TAIL_LENGTH);
+			buffer = (uint8_t*) QMPool_get(pool, 0);
+			if (buffer != NULL)
 			{
-				buffer[0] = headerEnProceso.stx;
-				buffer[1] = headerEnProceso.op;
-				buffer[2] = headerEnProceso.tam;
+				buffer[STX_POS] = headerEnProceso.stx;
+				buffer[OP_POS] = headerEnProceso.op;
+				buffer[TAM_POS] = headerEnProceso.tam;
 				bufferIndex = 3;
 				estado_proceso_rx = ESPERANDO_DATOS;
 			}
@@ -71,14 +87,16 @@ void procesarByteRecibido(uint8_t dato)
 			{
 				// no hay lugar para almacenar los datos a recibir
 				estado_proceso_rx = ESPERANDO_STX;
-			}*/
+			}
+
 		}
 
 		break;
 	case ESPERANDO_DATOS:
 
-		buffer[bufferIndex++] = dato;
+		buffer[bufferIndex] = dato;
 
+		bufferIndex++;
 		if (bufferIndex == (headerEnProceso.tam + HEADER_LENGTH))
 		{
 			// ya recibi todos los datos, no voy a esperar datos
@@ -86,11 +104,13 @@ void procesarByteRecibido(uint8_t dato)
 		}
 
 		break;
+
 	case ESPERANDO_ETX:
 		if (dato == ETX)
 		{
+			gpioToggle(LED3);
 			buffer[bufferIndex] = ETX;
-			realizarOperacion(buffer);
+			realizarOperacion(buffer, pool);
 			estado_proceso_rx = ESPERANDO_STX;
 		}
 		else
@@ -104,12 +124,12 @@ void procesarByteRecibido(uint8_t dato)
 
 }
 
-void proceso_init(void)
+void procesador_paquetes_init(void)
 {
 	estado_proceso_rx = ESPERANDO_STX;
 }
 
-static QMPool* getPool(uint32_t size)
+QMPool* getPool(uint32_t size)
 {
 	QMPool* pool = NULL;
 
@@ -130,28 +150,59 @@ static QMPool* getPool(uint32_t size)
 	return pool;
 }
 
-static void realizarOperacion(uint8_t* buffer)
+static void realizarOperacion(uint8_t* buffer, QMPool* pool)
 {
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	mensaje_entre_tareas_t mensajeEntreTareas;
+	uint8_t sprintfLength;
 
 	mensajeEntreTareas.buffer = buffer;
+	mensajeEntreTareas.pool = pool;
 
 	switch (buffer[OP_POS])
 	{
 	case MAYUSCULA:
-		xQueueSend(queMayusculizar, &mensajeEntreTareas, portMAX_DELAY);
+		gpioToggle(LED1);
+		mensajeEntreTareas.length = mensajeEntreTareas.buffer[TAM_POS] + HEADER_TAIL_LENGTH;
+		xQueueSendFromISR(queMayusculizar, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken)
+		;
 		break;
 	case MINUSCULA:
-		xQueueSend(queMinusculizar, &mensajeEntreTareas, portMAX_DELAY);
+		gpioToggle(LED2);
+		mensajeEntreTareas.length = mensajeEntreTareas.buffer[TAM_POS] + HEADER_TAIL_LENGTH;
+		xQueueSendFromISR(queMinusculizar, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken)
+		;
 		break;
 	case STACK:
+
+		sprintfLength = sprintf(&buffer[DATA_POS], "%u", uxTaskGetStackHighWaterMark(NULL));
+
+		mensajeEntreTareas.length = sprintfLength + HEADER_TAIL_LENGTH;
+		buffer[TAM_POS] = sprintfLength;
+		buffer[DATA_POS + sprintfLength] = ETX;
+
+		xQueueSendFromISR(queEnvioUART, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken)
 		break;
 	case HEAP:
+
+		sprintfLength = sprintf(&buffer[DATA_POS], "%u", xPortGetFreeHeapSize());
+
+		mensajeEntreTareas.length = sprintfLength + HEADER_TAIL_LENGTH;
+		buffer[TAM_POS] = sprintfLength;
+		buffer[DATA_POS + sprintfLength] = ETX;
+
+		xQueueSendFromISR(queEnvioUART, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken)
+
 		break;
 	case APP:
 		break;
 	default:
 		break;
 	}
+
 }
 

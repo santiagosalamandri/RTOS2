@@ -25,11 +25,17 @@ extern QueueHandle_t queMayusculizados;
 extern QueueHandle_t queMinusculizar;
 extern QueueHandle_t queMinusculizados;
 
+extern QueueHandle_t queProcesadorPaquetes;
+
 extern QueueHandle_t queEnvioUART;
 
 typedef struct {
   uint8_t* buffer;
+  uint32_t length;
+  QMPool* pool;
 } mensaje_entre_tareas_t;
+
+
 
 extern QMPool qmPoolChico, qmPoolMediano, qmPoolGrande;
 

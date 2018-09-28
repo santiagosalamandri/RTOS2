@@ -11,8 +11,11 @@
 #define STX 0x55
 #define ETX 0xAA
 
-#define HEADER_TAIL_LENGTH 	4
-#define HEADER_LENGTH 		3
+#define HEADER_TAIL_LENGTH 			4
+#define HEADER_LENGTH 				3
+
+
+#define MAX_UINT32_STRING_LENGTH	10
 
 typedef enum
 {
@@ -28,7 +31,8 @@ typedef enum
 {
 	STX_POS = 0,
 	OP_POS,
-	TAM_POS
+	TAM_POS,
+	DATA_POS
 } protocol_header_pos_t;
 
 typedef struct {
@@ -37,9 +41,9 @@ typedef struct {
   uint8_t tam;
 } __attribute__((__packed__)) header_t;
 
-
 void procesarByteRecibido(uint8_t dato);
-void proceso_init(void);
+void procesador_paquetes_init(void);
+QMPool* getPool(uint32_t size);
 
 
 #endif

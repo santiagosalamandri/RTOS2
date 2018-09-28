@@ -39,10 +39,9 @@
 
 /*==================[definiciones de datos internos]=========================*/
 
-
-static uint8_t memoriaPoolChico[BLOQUE_POOL_CHICO * CANTIDAD_POOL_CHICO];
-static uint8_t memoriaPoolMediano[BLOQUE_POOL_MEDIANO * CANTIDAD_POOL_MEDIANO];
-static uint8_t memoriaPoolGrande[BLOQUE_POOL_GRANDE * CANTIDAD_POOL_GRANDE];
+uint8_t memoriaPoolChico[BLOQUE_POOL_CHICO * CANTIDAD_POOL_CHICO];
+uint8_t memoriaPoolMediano[BLOQUE_POOL_MEDIANO * CANTIDAD_POOL_MEDIANO];
+uint8_t memoriaPoolGrande[BLOQUE_POOL_GRANDE * CANTIDAD_POOL_GRANDE];
 
 /*==================[definiciones de datos externos]=========================*/
 
@@ -53,10 +52,13 @@ QueueHandle_t queMayusculizados;
 QueueHandle_t queMinusculizar;
 QueueHandle_t queMinusculizados;
 QueueHandle_t queEnvioUART;
+QueueHandle_t queProcesadorPaquetes;
 
 /*==================[declaraciones de funciones internas]====================*/
 
 static void pools_init(void);
+static void pool_free(uint8_t* buffer, QMPool* pool);
+static void heapReport(void);
 static void queues_init(void);
 static void uart_task_create(void);
 static void mayusculizador_task_create(void);
@@ -77,9 +79,9 @@ int main(void)
 
 	pools_init();
 
-	proceso_init();
-
 	gpioWrite(LEDG, ON); 	// Led indicador programa corriendo	
+
+	procesador_paquetes_init();
 
 	uart_task_create();		// Crear tarea UART
 
@@ -87,7 +89,13 @@ int main(void)
 
 	minusculizador_task_create();
 
+	// Reportar Heap
+
+	heapReport();
+
 	vTaskStartScheduler();	// Iniciar scheduler
+
+
 
 	while ( TRUE)		// ---------- REPETIR POR SIEMPRE --------------------------
 	{
@@ -118,12 +126,49 @@ static void queues_init(void)
 	queEnvioUART = xQueueCreate(16, sizeof(mensaje_entre_tareas_t));
 }
 
+static void pool_free(uint8_t* buffer, QMPool* pool)
+{
+	QMPool_put(pool, buffer);
+}
+
+static void heapReport(void)
+{
+	mensaje_entre_tareas_t mensajeEntreTareas;
+	QMPool* pool = NULL;
+	uint8_t* buffer;
+
+	uint8_t sprintfLength;
+
+	pool = getPool(MAX_UINT32_STRING_LENGTH + HEADER_TAIL_LENGTH);
+	buffer = (uint8_t*) QMPool_get(pool, 0);
+
+	if (buffer != NULL)
+	{
+		buffer[STX_POS] = STX;
+		buffer[OP_POS] = HEAP;
+
+		sprintfLength = sprintf(&buffer[DATA_POS], "%u", xPortGetFreeHeapSize());
+
+		buffer[TAM_POS] = sprintfLength;
+		buffer[DATA_POS + sprintfLength] = ETX;
+
+		mensajeEntreTareas.length = sprintfLength + HEADER_TAIL_LENGTH;
+		mensajeEntreTareas.buffer = buffer;
+		mensajeEntreTareas.pool = pool;
+
+		xQueueSend(queEnvioUART, &mensajeEntreTareas, portMAX_DELAY);
+
+	}
+
+
+}
+
 static void uart_task_create(void)
 {
 	xTaskCreate(uart_task,                     // Funcion de la tarea a ejecutar
 			(const char *) "tarea_uart", // Nombre de la tarea como String amigable para el usuario
 			UART_TASK_STACK_SIZE, // Cantidad de stack de la tarea
-			procesarByteRecibido,                          // Parametros de tarea
+			pool_free,                          // Parametros de tarea
 			UART_TASK_PRIORITY,         // Prioridad de la tarea
 			0                         // Puntero a la tarea creada en el sistema
 			);
