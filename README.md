@@ -4,14 +4,19 @@ Repositorio con trabajos practicos de RTOS 2.
 
 # Condiciones de aprobacion
 
-R1)	Utilizar protocolo										OK
-
+R1)	Utilizar protocolo										OK \n
 R1.1)	Leer con interrupcion por rx uart								OK
+
 R1.2)	Ignorar si no empieza son STX									OK
+
 R1.3) Ignorar si no termina con ETX									OK
+
 R1.4) Paquete ok se copia a mem dinamica								OK
+
 R1.5) Puntero a paquete valido con OP 0 en la cola "queMayusculizar"					OK
+
 R1.6) Convertir a mayus los paquetes de la cola "queMayusculizar"					OK
+
 R1.7) Puntero a paquete valido con OP 1 en la cola "queMinusculizar"					OK
 R1.8) Convertir a minus los paquetes de la cola "queMinusculizar"					OK
 R1.9) Solo cambiar los alfabeticos a-z A-Z								OK
