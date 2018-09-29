@@ -18,104 +18,92 @@ void procesarByteRecibido(uint8_t dato)
 
 	switch (estado_proceso_rx)
 	{
-	case ESPERANDO_STX:
+	case ESPERANDO_STX:																				// Esperando caracter de inicializacion
 		if (dato == STX)
 		{
-			headerEnProceso.stx = dato;
-			estado_proceso_rx = ESPERANDO_OP;
+			headerEnProceso.stx = dato;																// Copiar caracter de inicializacion
+			estado_proceso_rx = ESPERANDO_OP;														// Esperando operacion
 		}
-		else
-		{
-			// se recibio un caracter de inico no valido, sigo esperando STX
-		}
+		else																						// Se recibio un caracter de inico no valido, sigo esperando STX
+		{ }
 		break;
 	case ESPERANDO_OP:
-		if (dato <= MINUSCULA)
+		if (dato <= MINUSCULA)																		// Comando valido, debo esperar mas datos
 		{
-			// comando valido, debo esperar mas datos
-			headerEnProceso.op = dato;
-			estado_proceso_rx = ESPERANDO_TAM;
+			headerEnProceso.op = dato;																// Copiar caracter de operacion
+			estado_proceso_rx = ESPERANDO_TAM;														// Esperando tamaño de dato
 		}
-		else if (dato == STACK || dato == HEAP)
+		else if (dato == STACK || dato == HEAP)														// Si la operacion es calcular heap o stack
 		{
 			headerEnProceso.op = dato;
 
 			pool = getPool(MAX_UINT32_STRING_LENGTH + HEADER_TAIL_LENGTH);
 			buffer = (uint8_t*) QMPool_get(pool, 0);
 
-			if (buffer != NULL)
+			if (buffer != NULL)																		// Si el buffer no es nulo guardar datos stx,op
 			{
 				buffer[STX_POS] = headerEnProceso.stx;
 				buffer[OP_POS] = headerEnProceso.op;
-				estado_proceso_rx = ESPERANDO_ETX;
+				estado_proceso_rx = ESPERANDO_ETX;													// Esperando caracter de finalizacion
 			}
-			else
+			else																					// No hay lugar para almacenar los datos a recibir
 			{
-				// no hay lugar para almacenar los datos a recibir
-				estado_proceso_rx = ESPERANDO_STX;
+				estado_proceso_rx = ESPERANDO_STX;													// Esperando caracter de inicializacion
 			}
-
 		}
-		else
+		else																						// Se recibio un caracter de operacion no valido, vuelco a esperar STX
 		{
-			// se recibio un caracter de operacion no valido, vuelco a esperar STX
-			estado_proceso_rx = ESPERANDO_STX;
+			estado_proceso_rx = ESPERANDO_STX;														// Esperando caracter de inicializacion
 		}
 		break;
 	case ESPERANDO_TAM:
 		headerEnProceso.tam = dato;
 
-		if (headerEnProceso.tam == 0)
+		if (headerEnProceso.tam == 0)																// Se recibio tamaño 0, no voy a esperar datos
 		{
-			// se recibio tamaño 0, no voy a esperar datos
-			estado_proceso_rx = ESPERANDO_ETX;
+			estado_proceso_rx = ESPERANDO_ETX;														// Esperando caracter de finalizacion
 		}
-		else
+		else																						// Se recibio un tamaño correcto
 		{
-			// se recibio un tamaño correcto
 			pool = getPool(headerEnProceso.tam + HEADER_TAIL_LENGTH);
 			buffer = (uint8_t*) QMPool_get(pool, 0);
-			if (buffer != NULL)
+			if (buffer != NULL)																		// Si el buffer no es nulo guardar datos stx,op,tam
 			{
 				buffer[STX_POS] = headerEnProceso.stx;
 				buffer[OP_POS] = headerEnProceso.op;
 				buffer[TAM_POS] = headerEnProceso.tam;
 				bufferIndex = 3;
-				estado_proceso_rx = ESPERANDO_DATOS;
+				estado_proceso_rx = ESPERANDO_DATOS;												// Esperando recepcion de datos
 			}
-			else
+			else																					// No hay lugar para almacenar los datos a recibir
 			{
-				// no hay lugar para almacenar los datos a recibir
-				estado_proceso_rx = ESPERANDO_STX;
+				estado_proceso_rx = ESPERANDO_STX;													// Esperando caracter de inicializacion
 			}
-
 		}
 
 		break;
-	case ESPERANDO_DATOS:
+	case ESPERANDO_DATOS:																			// Esperand recepcion de datos
 
 		buffer[bufferIndex] = dato;
 
 		bufferIndex++;
-		if (bufferIndex == (headerEnProceso.tam + HEADER_LENGTH))
+		if (bufferIndex == (headerEnProceso.tam + HEADER_LENGTH))									// Ya recibi todos los datos, no voy a esperar datos
 		{
-			// ya recibi todos los datos, no voy a esperar datos
 			estado_proceso_rx = ESPERANDO_ETX;
 		}
 
 		break;
 
-	case ESPERANDO_ETX:
+	case ESPERANDO_ETX:																				// Esperando caracter de finalizacion
 		if (dato == ETX)
 		{
 			gpioToggle(LED3);
-			buffer[bufferIndex] = ETX;
-			realizarOperacion(buffer, pool);
-			estado_proceso_rx = ESPERANDO_STX;
+			buffer[bufferIndex] = ETX;																// Paso el caracter al buffer
+			realizarOperacion(buffer, pool);														// Realizar operacion
+			estado_proceso_rx = ESPERANDO_STX;														// Esperando caracter de inicio
 		}
-		else
+		else																						// Recepción incorrecta, descarto trama
 		{
-			// recepción incorrecta, descarto trama
 			estado_proceso_rx = ESPERANDO_STX;
 		}
 		break;
@@ -126,17 +114,17 @@ void procesarByteRecibido(uint8_t dato)
 
 void procesador_paquetes_init(void)
 {
-	estado_proceso_rx = ESPERANDO_STX;
+	estado_proceso_rx = ESPERANDO_STX;																// Primer proceso esperando caracter de inicio
 }
 
 QMPool* getPool(uint32_t size)
 {
-	QMPool* pool = NULL;
+	QMPool* pool = NULL;																			// Inicializo el puntero nulo
 
+	// Asignacion de tamaño segun 'size'
 	if (size > BLOQUE_POOL_MEDIANO)
 	{
 		pool = &qmPoolGrande;
-
 	}
 	else if (size > BLOQUE_POOL_CHICO)
 	{
@@ -161,21 +149,21 @@ static void realizarOperacion(uint8_t* buffer, QMPool* pool)
 
 	switch (buffer[OP_POS])
 	{
-	case MAYUSCULA:
+	case MAYUSCULA:																					// Mayusculizar
 		gpioToggle(LED1);
 		mensajeEntreTareas.length = mensajeEntreTareas.buffer[TAM_POS] + HEADER_TAIL_LENGTH;
-		xQueueSendFromISR(queMayusculizar, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
+		xQueueSendFromISR(queMayusculizar, &mensajeEntreTareas, &xHigherPriorityTaskWoken);			// Encolar puntero a la estructura con el dato a mayusculizar
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken)
 		;
 		break;
-	case MINUSCULA:
+	case MINUSCULA:																					// Minusculizar
 		gpioToggle(LED2);
 		mensajeEntreTareas.length = mensajeEntreTareas.buffer[TAM_POS] + HEADER_TAIL_LENGTH;
-		xQueueSendFromISR(queMinusculizar, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
+		xQueueSendFromISR(queMinusculizar, &mensajeEntreTareas, &xHigherPriorityTaskWoken);			// Encolar puntero a la estructura con el dato a minusculizar
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken)
 		;
 		break;
-	case STACK:
+	case STACK:																						// Calcular stack
 
 		sprintfLength = sprintf(&buffer[DATA_POS], "%u", uxTaskGetStackHighWaterMark(NULL));
 
@@ -186,7 +174,7 @@ static void realizarOperacion(uint8_t* buffer, QMPool* pool)
 		xQueueSendFromISR(queEnvioUART, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken)
 		break;
-	case HEAP:
+	case HEAP:																						// Calcular heap
 
 		sprintfLength = sprintf(&buffer[DATA_POS], "%u", xPortGetFreeHeapSize());
 
