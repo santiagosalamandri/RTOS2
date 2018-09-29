@@ -7,7 +7,9 @@
 #include "task.h"
 #include "queue.h"
 
-#define DIFERENCIA_ASCII_MINUSCULA_MAYUSCULA	32
+#define LETRA_a 97															// Valor ASCII de a
+#define LETRA_z 122															// Valor ASCII de z
+#define DIFERENCIA_ASCII_MINUSCULA_MAYUSCULA 32								// Diferencia ASCII entre mayus y minus
 
 void mayusculizador_task(void* taskParmPtr);
 
