@@ -3,6 +3,7 @@
 static void minusculizar(mensaje_entre_tareas_t* mensajeEntreTareas);							// Funcion minusculizadora
 extern void stackReport(void);																	// Reporte de stack disponible
 extern void sizeReport(void);
+extern void timeReport(void);
 
 extern header_t headerEnProceso;
 
@@ -14,11 +15,12 @@ void minusculizador_task(void* taskParmPtr)
 	while (TRUE) // ---------- REPETIR POR SIEMPRE --------------------------
 	{
 		xQueueReceive(queMinusculizar, &mensajeEntreTareas, portMAX_DELAY);						// Desencolar dato
-		headerEnProceso.tiempo_de_fin =  xTaskGetTickCount();
+		headerEnProceso.tiempo_de_fin =  xTaskGetTickCount() / portTICK_RATE_MS;
 		minusculizar(&mensajeEntreTareas);														// Mayusculizar dato
 		xQueueSend(queTransmision, &mensajeEntreTareas, portMAX_DELAY);							// Encolar resultado
 		stackReport();																			// Reportar stack disponible
 		sizeReport();
+		timeReport();
 	}
 }
 

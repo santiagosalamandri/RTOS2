@@ -22,7 +22,7 @@ void procesarByteRecibido(uint8_t dato)
 		if (dato == STX)
 		{
 			headerEnProceso.stx = dato;																// Copiar caracter de inicializacion
-			headerEnProceso.tiempo_de_llegada = xTaskGetTickCount();
+			headerEnProceso.tiempo_de_llegada = xTaskGetTickCount() / portTICK_RATE_MS;
 			estado_proceso_rx = ESPERANDO_OP;														// Esperando operacion
 		}
 		else																						// Se recibio un caracter de inico no valido, sigo esperando STX
@@ -32,7 +32,7 @@ void procesarByteRecibido(uint8_t dato)
 		if (dato <= MINUSCULA)																		// Comando valido, debo esperar mas datos
 		{
 			headerEnProceso.op = dato;																// Copiar caracter de operacion
-			headerEnProceso.tiempo_de_inicio = xTaskGetTickCount();
+			headerEnProceso.tiempo_de_inicio = xTaskGetTickCount() / portTICK_RATE_MS;
 			estado_proceso_rx = ESPERANDO_TAM;														// Esperando tamaño de dato
 		}
 		else if (dato == STACK || dato == HEAP)														// Si la operacion es calcular heap o stack
@@ -98,7 +98,7 @@ void procesarByteRecibido(uint8_t dato)
 		{
 			gpioToggle(LED3);
 			buffer[bufferIndex] = ETX;																// Paso el caracter al buffer
-			headerEnProceso.tiempo_de_recepcion = xTaskGetTickCount();
+			headerEnProceso.tiempo_de_recepcion = xTaskGetTickCount() / portTICK_RATE_MS;
 			headerEnProceso.largo_del_paquete = HEADER_LENGTH+headerEnProceso.tam+HEADER_TAIL_LENGTH;
 			realizarOperacion(buffer, pool);														// Realizar operacion
 			estado_proceso_rx = ESPERANDO_STX;														// Esperando caracter de inicio
@@ -212,9 +212,45 @@ void stackReport(void)
 	{
 		// Asignacion de datos del paquete a procesar
 		buffer[STX_POS] = STX;															// Cabecera del paquete
-		buffer[OP_POS] = HEAP;															// Operacion del paquete
+		buffer[OP_POS] = STACK;															// Operacion del paquete
 
 		sprintfLength = sprintf(&buffer[DATA_POS], "%u", uxTaskGetStackHighWaterMark(NULL));
+
+		buffer[TAM_POS] = sprintfLength;												// Tamaño del paquete
+		buffer[DATA_POS + sprintfLength] = ETX;											// Final del paquete
+
+		// Pasaje de datos a la estructura
+		mensajeEntreTareas.length = sprintfLength + HEADER_TAIL_LENGTH;
+		mensajeEntreTareas.buffer = buffer;
+		mensajeEntreTareas.pool = pool;
+
+		xQueueSend(queTransmision, &mensajeEntreTareas, portMAX_DELAY);					// Encolado de puntero a la estructura
+	}
+}
+
+void timeReport(void)
+{
+	mensaje_entre_tareas_t mensajeEntreTareas;
+	QMPool* pool = NULL;																// Inicializo nulo el puntero al pool
+	uint8_t* buffer;																	// Buffer arreglo de uint8
+	uint8_t sprintfLength;																// Largo necesario para el sprintf
+
+	pool = getPool(MAX_UINT32_STRING_LENGTH + HEADER_TAIL_LENGTH);						// Calculando cantidad de memoria
+	buffer = (uint8_t*) QMPool_get(pool, 0);											// Asignando memoria al buffer
+
+	if (buffer != NULL)																	// Si el puntero no es nulo
+	{
+		// Asignacion de datos del paquete a procesar
+		buffer[STX_POS] = STX;															// Cabecera del paquete
+		buffer[OP_POS] = PERFORMANCE;															// Operacion del paquete
+
+		sprintfLength = sprintf(&buffer[DATA_POS], "%u|%u|%u|%u|%u|%u",
+				headerEnProceso.tiempo_de_llegada,
+				headerEnProceso.tiempo_de_recepcion,
+				headerEnProceso.tiempo_de_inicio,
+				headerEnProceso.tiempo_de_fin,
+				headerEnProceso.tiempo_de_salida,
+				headerEnProceso.tiempo_de_transmision);
 
 		buffer[TAM_POS] = sprintfLength;												// Tamaño del paquete
 		buffer[DATA_POS + sprintfLength] = ETX;											// Final del paquete
@@ -242,7 +278,7 @@ void sizeReport(void)
 	{
 		// Asignacion de datos del paquete a procesar
 		buffer[STX_POS] = STX;															// Cabecera del paquete
-		buffer[OP_POS] = HEAP;															// Operacion del paquete
+		buffer[OP_POS] = PERFORMANCE;															// Operacion del paquete
 
 		sprintfLength = sprintf(&buffer[DATA_POS], "%u|%u", headerEnProceso.largo_del_paquete,headerEnProceso.memoria_alojada);
 

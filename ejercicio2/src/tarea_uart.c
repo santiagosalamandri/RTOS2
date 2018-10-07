@@ -41,9 +41,9 @@ static void uartSend(uint8_t* buffer)
 {
 	txIndex = 0;																			// Indice de transmision
 
-	//headerEnProceso.tiempo_de_salida =  xTaskGetTickCount();
+	headerEnProceso.tiempo_de_salida =  xTaskGetTickCount() / portTICK_RATE_MS;
 	uartTxSendByte(buffer[txIndex++]);														// Enviar byte
-	//headerEnProceso.tiempo_de_transmision =  xTaskGetTickCount();
+	headerEnProceso.tiempo_de_transmision =  xTaskGetTickCount() / portTICK_RATE_MS;
 }
 
 static uint8_t uartGetTxData(uint8_t* txData)

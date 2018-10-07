@@ -144,7 +144,6 @@ static void pool_free(uint8_t* buffer, QMPool* pool)
 	QMPool_put(pool, buffer);
 }
 
-
 static void uart_task_create(void)
 {
 	xTaskCreate(uart_task,                    								// Funcion de la tarea a ejecutar
