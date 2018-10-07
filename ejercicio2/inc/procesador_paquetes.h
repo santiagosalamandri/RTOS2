@@ -40,6 +40,7 @@ void procesador_paquetes_init(void);
 void stackReport(void);																	// Reporte de stack disponible
 void sizeReport(void);
 void heapReport(void);
+void timeReport(void);
 QMPool* getPool(uint32_t size);
 
 extern QueueHandle_t queMayusculizar;
