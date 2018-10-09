@@ -14,7 +14,7 @@ void procesarByteRecibido(uint8_t dato)
 	static uint16_t bufferIndex;
 	uint8_t sprintfLength;
 
-	gpioToggle(LED3);
+	//gpioToggle(LED3);
 
 	switch (estado_proceso_rx)
 	{
@@ -33,7 +33,7 @@ void procesarByteRecibido(uint8_t dato)
 		{
 			headerEnProceso.op = dato;																// Copiar caracter de operacion
 			headerEnProceso.tiempo_de_inicio = xTaskGetTickCount() / portTICK_RATE_MS;
-			estado_proceso_rx = ESPERANDO_TAM;														// Esperando tama��o de dato
+			estado_proceso_rx = ESPERANDO_TAM;														// Esperando tama������o de dato
 		}
 		else if (dato == STACK || dato == HEAP)														// Si la operacion es calcular heap o stack
 		{
@@ -61,11 +61,11 @@ void procesarByteRecibido(uint8_t dato)
 	case ESPERANDO_TAM:
 		headerEnProceso.tam = dato;
 
-		if (headerEnProceso.tam == 0)																// Se recibio tama��o 0, no voy a esperar datos
+		if (headerEnProceso.tam == 0)																// Se recibio tama������o 0, no voy a esperar datos
 		{
 			estado_proceso_rx = ESPERANDO_ETX;														// Esperando caracter de finalizacion
 		}
-		else																						// Se recibio un tama��o correcto
+		else																						// Se recibio un tama������o correcto
 		{
 			pool = getPool(headerEnProceso.tam + HEADER_TAIL_LENGTH);
 			buffer = (uint8_t*) QMPool_get(pool, 0);
@@ -96,14 +96,14 @@ void procesarByteRecibido(uint8_t dato)
 	case ESPERANDO_ETX:																				// Esperando caracter de finalizacion
 		if(dato == ETX)
 		{
-			gpioToggle(LED3);
+			//gpioToggle(LED3);
 			buffer[bufferIndex] = ETX;																// Paso el caracter al buffer
 			headerEnProceso.tiempo_de_recepcion = xTaskGetTickCount() / portTICK_RATE_MS;
 			headerEnProceso.largo_del_paquete = HEADER_LENGTH+headerEnProceso.tam+HEADER_TAIL_LENGTH;
 			realizarOperacion(buffer, pool);														// Realizar operacion
 			estado_proceso_rx = ESPERANDO_STX;														// Esperando caracter de inicio
 		}
-		else																						// Recepci��n incorrecta, descarto trama
+		else																						// Recepci������n incorrecta, descarto trama
 		{
 			estado_proceso_rx = ESPERANDO_STX;
 		}
@@ -120,7 +120,7 @@ QMPool* getPool(uint32_t size)
 {
 	QMPool* pool = NULL;																			// Inicializo el puntero nulo
 
-	// Asignacion de tama��o segun 'size'
+	// Asignacion de tama������o segun 'size'
 	if (size > BLOQUE_POOL_MEDIANO)
 	{
 		pool = &qmPoolGrande;
@@ -152,13 +152,13 @@ void realizarOperacion(uint8_t* buffer, QMPool* pool)
 	switch (buffer[OP_POS])
 	{
 	case MAYUSCULA:																					// Mayusculizar
-		gpioToggle(LED1);
+		//gpioToggle(LED1);
 		mensajeEntreTareas.length = mensajeEntreTareas.buffer[TAM_POS] + HEADER_TAIL_LENGTH;
 		xQueueSendFromISR(queMayusculizar, &mensajeEntreTareas, &xHigherPriorityTaskWoken);			// Encolar puntero a la estructura con el dato a mayusculizar
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 		break;
 	case MINUSCULA:																					// Minusculizar
-		gpioToggle(LED2);
+		//gpioToggle(LED2);
 		mensajeEntreTareas.length = mensajeEntreTareas.buffer[TAM_POS] + HEADER_TAIL_LENGTH;
 		xQueueSendFromISR(queMinusculizar, &mensajeEntreTareas, &xHigherPriorityTaskWoken);			// Encolar puntero a la estructura con el dato a minusculizar
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -186,7 +186,7 @@ void realizarOperacion(uint8_t* buffer, QMPool* pool)
 	case APP:
 		break;
 	case PERFORMANCE:
-		gpioToggle(LED3);
+		//gpioToggle(LED3);
 		headerEnProceso.id_de_paquete ++;
 		mensajeEntreTareas.length = mensajeEntreTareas.buffer[TAM_POS] + HEADER_TAIL_LENGTH;
 		xQueueSendFromISR(queMedirPerformance, &mensajeEntreTareas, &xHigherPriorityTaskWoken);			// Encolar puntero a la estructura con el dato a minusculizar
@@ -216,7 +216,7 @@ void stackReport(void)
 
 		sprintfLength = sprintf(&buffer[DATA_POS], "%u", uxTaskGetStackHighWaterMark(NULL));
 
-		buffer[TAM_POS] = sprintfLength;												// Tama��o del paquete
+		buffer[TAM_POS] = sprintfLength;												// Tama������o del paquete
 		buffer[DATA_POS + sprintfLength] = ETX;											// Final del paquete
 
 		// Pasaje de datos a la estructura
@@ -252,7 +252,7 @@ void timeReport(void)
 				headerEnProceso.tiempo_de_salida,
 				headerEnProceso.tiempo_de_transmision);
 
-		buffer[TAM_POS] = sprintfLength;												// Tama��o del paquete
+		buffer[TAM_POS] = sprintfLength;												// Tama������o del paquete
 		buffer[DATA_POS + sprintfLength] = ETX;											// Final del paquete
 
 		// Pasaje de datos a la estructura
@@ -282,7 +282,7 @@ void sizeReport(void)
 
 		sprintfLength = sprintf(&buffer[DATA_POS], "%u|%u", headerEnProceso.largo_del_paquete,headerEnProceso.memoria_alojada);
 
-		buffer[TAM_POS] = sprintfLength;												// Tama��o del paquete
+		buffer[TAM_POS] = sprintfLength;												// Tama������o del paquete
 		buffer[DATA_POS + sprintfLength] = ETX;											// Final del paquete
 
 		// Pasaje de datos a la estructura
@@ -312,7 +312,7 @@ void heapReport(void)
 
 		sprintfLength = sprintf(&buffer[DATA_POS], "%u", xPortGetFreeHeapSize());
 
-		buffer[TAM_POS] = sprintfLength;									// Tama��o del paquete
+		buffer[TAM_POS] = sprintfLength;									// Tama������o del paquete
 		buffer[DATA_POS + sprintfLength] = ETX;								// Final del paquete
 
 		// Pasaje de datos a la estructura

@@ -32,6 +32,11 @@
 
 /*==================[inlcusiones]============================================*/
 #include "main.h"
+#include "FrameworkEventos.h"
+#include "pulsadores.h"
+#include "leds.h"
+#include "tiempoLeds.h"
+
 /*==================[definiciones y macros]==================================*/
 //DEBUG_PRINT_ENABLE
 #define CANTIDAD_PAQUETES 4
@@ -54,6 +59,12 @@ QueueHandle_t queMedirPerformance;
 
 header_t headerEnProceso;
 
+
+Modulo_t * ModuloDriverPulsadores;
+Modulo_t * ModuloBroadcast;
+Modulo_t * ModuloDriverLeds;
+Modulo_t * ModuloDriverTiempoLeds;
+
 /*==================[declaraciones de funciones internas]====================*/
 
 static void header_init(void);
@@ -73,13 +84,15 @@ static void performance_task_create(void);
 int main(void)
 {
 	// Inicializaciones
+
 	boardConfig(); 																// Inicializar y configurar la plataforma
+
 	header_init();
 	queues_init();																// Inicializacion de colas
 	pools_init();																// Inicializacion de pools
 	procesador_paquetes_init(); 												// Inicializacion de procesamiento de paquetes
 
-	gpioWrite(LEDG, ON); 														// Led indicador programa corriendo
+	//gpioWrite(LEDG, ON); 														// Led indicador programa corriendo
 
 	// Creacion de tareas
 	uart_task_create();															// Creacion de tarea de utilizacion de UART
@@ -89,8 +102,27 @@ int main(void)
 
 	heapReport();																// Reporte de memoria disponible en heap
 
-	vTaskStartScheduler();														// Iniciar scheduler de tareas
 
+
+	queEventosBaja= xQueueCreate(15, sizeof(Evento_t));
+
+
+	xTaskCreate(
+			taskDespacharEventos,
+				"Control",
+				5 * configMINIMAL_STACK_SIZE,
+				(void*) queEventosBaja,
+				PERFORMANCE_TASK_PRIORITY,
+				NULL );
+
+	ModuloBroadcast			= RegistrarModulo(ManejadorEventosBroadcast, 			PRIORIDAD_BAJA);
+	ModuloDriverPulsadores	= RegistrarModulo(DriverPulsadores, 					PRIORIDAD_BAJA);
+	ModuloDriverLeds	= RegistrarModulo(ManejadorEventosLeds, 					PRIORIDAD_BAJA);
+	ModuloDriverTiempoLeds	= RegistrarModulo(ManejadorEventosTiempoLeds,			PRIORIDAD_BAJA);
+
+	IniciarTodosLosModulos();
+
+	vTaskStartScheduler();														// Iniciar scheduler de tareas
 
 	while ( TRUE)		// ---------- REPETIR POR SIEMPRE --------------------------
 	{
@@ -186,6 +218,11 @@ static void performance_task_create(void)
 			PERFORMANCE_TASK_PRIORITY,        							// Prioridad de la tarea
 			0                         										// Puntero a la tarea creada en el sistema
 	);
+}
+
+void vApplicationIdleHook ( void )
+{
+
 }
 
 
