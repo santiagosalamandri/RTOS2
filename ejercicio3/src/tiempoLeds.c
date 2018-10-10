@@ -1,17 +1,15 @@
 #include "FrameworkEventos.h"
 #include "tiempoLeds.h"
-#include "pulsadores.h"
 
 #include "task.h"
 
-struct{
-uint32_t tiemposInicialPulsadores[MAX_PULSADORES];
-uint32_t tiemposFinalPulsadores[MAX_PULSADORES];
-bool_t pulsado[MAX_PULSADORES];
-}tiemposPulsadores_t;
+tiemposPulsadores_t tiempoPulsadores;
 
-static void inicializarTiemposPulsadores();
 static void tiemposToString(int pulsador);
+
+tiemposPulsadores_t* getTiemposPulsadores(){
+return &tiempoPulsadores;
+}
 
 void ManejadorEventosTiempoLeds (Evento_t * evn){
 
@@ -22,14 +20,14 @@ void ManejadorEventosTiempoLeds (Evento_t * evn){
 			break;
 
 		case SIG_PULSADOR_APRETADO:
-			tiemposPulsadores_t.pulsado[evn->valor]=true;
-			tiemposPulsadores_t.tiemposInicialPulsadores[evn->valor]=xTaskGetTickCount();
+			tiempoPulsadores.pulsado[evn->valor]=true;
+			tiempoPulsadores.tiemposInicialPulsadores[evn->valor]=xTaskGetTickCount()/ portTICK_RATE_MS;
 			break;
 
 		case SIG_PULSADOR_LIBERADO:
-			tiemposPulsadores_t.pulsado[evn->valor]=false;
-			tiemposPulsadores_t.tiemposFinalPulsadores[evn->valor]=xTaskGetTickCount();
-			tiemposToString(evn->valor);
+			tiempoPulsadores.pulsado[evn->valor]=false;
+			tiempoPulsadores.tiemposFinalPulsadores[evn->valor]=xTaskGetTickCount()/ portTICK_RATE_MS;
+			//tiemposToString(evn->valor);
 			break;
 
 		default:
@@ -39,18 +37,19 @@ void ManejadorEventosTiempoLeds (Evento_t * evn){
 }
 
 
-static void inicializarTiemposPulsadores(){
+void inicializarTiemposPulsadores(){
 	int i=0;
 	for (i = 0; i < MAX_PULSADORES; ++i) {
-		tiemposPulsadores_t.tiemposInicialPulsadores[i]=0;
-		tiemposPulsadores_t.tiemposFinalPulsadores[i]=0;
-		tiemposPulsadores_t.pulsado[i]=false;
+		tiempoPulsadores.tiemposInicialPulsadores[i]=0;
+		tiempoPulsadores.tiemposFinalPulsadores[i]=0;
+		tiempoPulsadores.pulsado[i]=false;
 	}
 
 
 }
 
 static void tiemposToString(int pulsador){
-	printf("Tiempo de pulsacion la tecla %d: %ld mS.\n ",pulsador+1,tiemposPulsadores_t.tiemposFinalPulsadores[pulsador]-tiemposPulsadores_t.tiemposInicialPulsadores[pulsador]);
-
+	printf("Tiempo de pulsacion la tecla %d: %ld mS.\n ",pulsador+1,tiempoPulsadores.tiemposFinalPulsadores[pulsador]-tiempoPulsadores.tiemposInicialPulsadores[pulsador]);
 }
+
+

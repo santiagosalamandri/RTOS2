@@ -88,3 +88,9 @@ bool_t timerCorriendo	( Modulo_t * m )
 {
 	return (m->timeout_tick != TIMER_DISABLED && m->timeout_tick != TIMER_EXPIRED);
 }
+
+
+void vApplicationIdleHook ( void )
+{
+
+}

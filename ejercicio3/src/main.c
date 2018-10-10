@@ -59,7 +59,6 @@ QueueHandle_t queMedirPerformance;
 
 header_t headerEnProceso;
 
-
 Modulo_t * ModuloDriverPulsadores;
 Modulo_t * ModuloBroadcast;
 Modulo_t * ModuloDriverLeds;
@@ -72,10 +71,13 @@ static void pools_init(void);													// Inicializacion de pools
 static void pool_free(uint8_t* buffer, QMPool* pool);							// Liberacion de memoria de pools
 extern void heapReport(void);													// Reporte de memoria disponible en heap
 static void queues_init(void);													// Inicializacion de colas
+static void modulos_init(void);													// Inicializacion de modulos
+
 static void uart_task_create(void);												// Creacion de tarea de utilizacion de UART
 static void mayusculizador_task_create(void);									// Creacion de tarea mayusculizadora
 static void minusculizador_task_create(void);									// Creacion de tarea minusculizadora
 static void performance_task_create(void);
+static void despachador_eventos_task_create(void);
 /*==================[declaraciones de funciones externas]====================*/
 
 /*==================[funcion principal]======================================*/
@@ -92,35 +94,18 @@ int main(void)
 	pools_init();																// Inicializacion de pools
 	procesador_paquetes_init(); 												// Inicializacion de procesamiento de paquetes
 
-	//gpioWrite(LEDG, ON); 														// Led indicador programa corriendo
+	queEventosBaja= xQueueCreate(15, sizeof(Evento_t));
 
 	// Creacion de tareas
 	uart_task_create();															// Creacion de tarea de utilizacion de UART
 	mayusculizador_task_create();												// Creacion de tarea mayusculizadora
 	minusculizador_task_create();												// Creacion de tarea minusculizadora
 	performance_task_create();
-
+	despachador_eventos_task_create();
 	heapReport();																// Reporte de memoria disponible en heap
+	modulos_init();
 
 
-
-	queEventosBaja= xQueueCreate(15, sizeof(Evento_t));
-
-
-	xTaskCreate(
-			taskDespacharEventos,
-				"Control",
-				5 * configMINIMAL_STACK_SIZE,
-				(void*) queEventosBaja,
-				PERFORMANCE_TASK_PRIORITY,
-				NULL );
-
-	ModuloBroadcast			= RegistrarModulo(ManejadorEventosBroadcast, 			PRIORIDAD_BAJA);
-	ModuloDriverPulsadores	= RegistrarModulo(DriverPulsadores, 					PRIORIDAD_BAJA);
-	ModuloDriverLeds	= RegistrarModulo(ManejadorEventosLeds, 					PRIORIDAD_BAJA);
-	ModuloDriverTiempoLeds	= RegistrarModulo(ManejadorEventosTiempoLeds,			PRIORIDAD_BAJA);
-
-	IniciarTodosLosModulos();
 
 	vTaskStartScheduler();														// Iniciar scheduler de tareas
 
@@ -220,11 +205,28 @@ static void performance_task_create(void)
 	);
 }
 
-void vApplicationIdleHook ( void )
-{
+static void despachador_eventos_task_create(void){
+
+	xTaskCreate(
+				taskDespacharEventos,
+					"Control",
+					5 * configMINIMAL_STACK_SIZE,
+					(void*) queEventosBaja,
+					PERFORMANCE_TASK_PRIORITY,
+					NULL );
 
 }
 
+
+static void modulos_init(void){
+
+	ModuloBroadcast			= RegistrarModulo(ManejadorEventosBroadcast, 			PRIORIDAD_BAJA);
+	ModuloDriverPulsadores	= RegistrarModulo(DriverPulsadores, 					PRIORIDAD_BAJA);
+	ModuloDriverLeds	= RegistrarModulo(ManejadorEventosLeds, 					PRIORIDAD_BAJA);
+	ModuloDriverTiempoLeds	= RegistrarModulo(ManejadorEventosTiempoLeds,			PRIORIDAD_BAJA);
+
+	IniciarTodosLosModulos();
+}
 
 /*==================[definiciones de funciones externas]=====================*/
 
