@@ -29,7 +29,7 @@ void procesarByteRecibido(uint8_t dato)
 		{ }
 		break;
 	case ESPERANDO_OP:
-		if (dato <= MINUSCULA)																		// Comando valido, debo esperar mas datos
+		if (dato == MINUSCULA || dato == MAYUSCULA || dato == PERFORMANCE)							// Comando valido, debo esperar mas datos
 		{
 			headerEnProceso.op = dato;																// Copiar caracter de operacion
 			headerEnProceso.tiempo_de_inicio = xTaskGetTickCount() / portTICK_RATE_MS;

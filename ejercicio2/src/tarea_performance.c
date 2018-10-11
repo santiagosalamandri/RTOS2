@@ -1,8 +1,12 @@
 #include "tarea_performance.h"
 
 static void performance(mensaje_entre_tareas_t* mensajeEntreTareas);							// Funcion mayusculizadora
-void stackReport(void);																	// Reporte de stack disponible
-void sizeReport(void);
+extern void stackReport(void);																	// Reporte de stack disponible
+extern void sizeReport(void);
+extern void timeReport(void);
+
+
+extern header_t headerEnProceso;
 
 // Implementacion de funcion de la tarea
 void performance_task(void* taskParmPtr)
@@ -12,10 +16,12 @@ void performance_task(void* taskParmPtr)
 	while (TRUE) // ---------- REPETIR POR SIEMPRE --------------------------
 	{
 		xQueueReceive(queMedirPerformance, &mensajeEntreTareas, portMAX_DELAY);						// Desencolar dato
+		headerEnProceso.tiempo_de_fin =  xTaskGetTickCount() / portTICK_RATE_MS;
 		performance(&mensajeEntreTareas);														// Mayusculizar dato
 		xQueueSend(queTransmision, &mensajeEntreTareas, portMAX_DELAY);							// Encolar resultado
 		stackReport();																			// Reportar stack disponible
 		sizeReport();
+		timeReport();
 	}
 }
 
