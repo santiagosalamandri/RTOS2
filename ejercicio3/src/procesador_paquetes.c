@@ -2,6 +2,7 @@
 #include "tiempoLeds.h"
 
 void realizarOperacion(uint8_t* buffer, QMPool* pool);
+uint8_t host_platform_is_in_interrupt_context( void );
 
 extern header_t headerEnProceso;
 
@@ -171,7 +172,7 @@ void realizarOperacion(uint8_t* buffer, QMPool* pool)
 		break;
 	case STACK:																						// Calcular stack
 //		sprintfLength = sprintf(&buffer[DATA_POS], "Stack:%u", uxTaskGetStackHighWaterMark(NULL));
-		sprintfLength = sprintf(&buffer[DATA_POS], "Stack:%u", xPortGetFreeHeapSize());
+/*		sprintfLength = sprintf(&buffer[DATA_POS], "Stack:%u", xPortGetFreeHeapSize());
 
 		mensajeEntreTareas.length = sprintfLength + HEADER_TAIL_LENGTH;
 		buffer[TAM_POS] = sprintfLength;
@@ -179,9 +180,11 @@ void realizarOperacion(uint8_t* buffer, QMPool* pool)
 
 		xQueueSendFromISR(queTransmision, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+*/
+		stackReport();
 		break;
 	case HEAP:																						// Calcular heap
-		sprintfLength = sprintf(&buffer[DATA_POS], "Heap:%u", xPortGetFreeHeapSize());
+		/*sprintfLength = sprintf(&buffer[DATA_POS], "Heap:%u", xPortGetFreeHeapSize());
 
 		mensajeEntreTareas.length = sprintfLength + HEADER_TAIL_LENGTH;
 		buffer[TAM_POS] = sprintfLength;
@@ -189,6 +192,9 @@ void realizarOperacion(uint8_t* buffer, QMPool* pool)
 
 		xQueueSendFromISR(queTransmision, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+		*/
+		heapReport();
+		stackReport();
 		break;
 	case APP:
 		//TODO
@@ -210,6 +216,7 @@ void realizarOperacion(uint8_t* buffer, QMPool* pool)
 
 		xQueueSendFromISR(queTransmision, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
 		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+		stackReport();
 		inicializarTiemposPulsadores();
 		break;
 	default:
@@ -234,7 +241,7 @@ void stackReport(void)
 		buffer[STX_POS] = STX;															// Cabecera del paquete
 		buffer[OP_POS] = STACK;															// Operacion del paquete
 
-		sprintfLength = sprintf(&buffer[DATA_POS], "%u", uxTaskGetStackHighWaterMark(NULL));
+		sprintfLength = sprintf(&buffer[DATA_POS], "Stack:%u", uxTaskGetStackHighWaterMark(NULL));
 
 		buffer[TAM_POS] = sprintfLength;												// Tamaño del paquete
 		buffer[DATA_POS + sprintfLength] = ETX;											// Final del paquete
@@ -244,6 +251,13 @@ void stackReport(void)
 		mensajeEntreTareas.buffer = buffer;
 		mensajeEntreTareas.pool = pool;
 
+		if( host_platform_is_in_interrupt_context()){
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			xQueueSendFromISR(queTransmision, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+		}
+		else
 		xQueueSend(queTransmision, &mensajeEntreTareas, portMAX_DELAY);					// Encolado de puntero a la estructura
 	}
 }
@@ -310,6 +324,7 @@ void sizeReport(void)
 		mensajeEntreTareas.buffer = buffer;
 		mensajeEntreTareas.pool = pool;
 
+
 		xQueueSend(queTransmision, &mensajeEntreTareas, portMAX_DELAY);					// Encolado de puntero a la estructura
 	}
 }
@@ -330,7 +345,7 @@ void heapReport(void)
 		buffer[STX_POS] = STX;												// Cabecera del paquete
 		buffer[OP_POS] = HEAP;												// Operacion del paquete
 
-		sprintfLength = sprintf(&buffer[DATA_POS], "%u", xPortGetFreeHeapSize());
+		sprintfLength = sprintf(&buffer[DATA_POS], "Heap:%u", xPortGetFreeHeapSize());
 
 		buffer[TAM_POS] = sprintfLength;									// Tamaño del paquete
 		buffer[DATA_POS + sprintfLength] = ETX;								// Final del paquete
@@ -340,6 +355,21 @@ void heapReport(void)
 		mensajeEntreTareas.buffer = buffer;
 		mensajeEntreTareas.pool = pool;
 
+		if( host_platform_is_in_interrupt_context()){
+					BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+					xQueueSendFromISR(queTransmision, &mensajeEntreTareas, &xHigherPriorityTaskWoken);
+					portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+				}
+		else
 		xQueueSend(queTransmision, &mensajeEntreTareas, portMAX_DELAY);		// Encolado de puntero a la estructura
 	}
+}
+
+
+uint8_t host_platform_is_in_interrupt_context( void )
+{
+    /* From the ARM Cortex-M3 Techinical Reference Manual
+     * 0xE000ED04   ICSR    RW [a]  Privileged  0x00000000  Interrupt Control and State Register */
+    return ( ( SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk ) != 0 ) ? 1 : 0;
 }

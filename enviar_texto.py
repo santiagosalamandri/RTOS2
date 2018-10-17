@@ -123,7 +123,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 STX = 0x55
 ETX = 0xAA
-cantLineas=[3,3,1,1,0,4,1]
+cantLineas=[3,3,1,2,0,4,2]
 
 args = obtener_argumentos_cli()
 
