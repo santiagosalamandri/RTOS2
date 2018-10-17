@@ -34,9 +34,17 @@ def cartel_de_envio(args):
         str_oper = 'mayusculizar'
     elif args['operacion'] == 1:
         str_oper = 'minusculizar'
-    else:
+    elif args['operacion'] == 2:
+        str_oper = 'reportar stack'	
+    elif args['operacion'] == 3:
+        str_oper = 'reportar heap'
+    elif args['operacion'] == 4:
+        str_oper = 'reportar estado'	
+    elif args['operacion'] == 5:
         str_oper = 'medir perfomance'
-
+    else:
+        str_oper = 'medir tiempo de botones'
+	
     print('--------------------------------------------------------------------------------')
     print('--- Enviando {} por {} para {}'.format(
         args['nombre_archivo'],
@@ -103,10 +111,11 @@ def obtener_argumentos_cli():
             dest='operacion',
             action='store',
             type=int,
-            choices=[0, 1, 5],
-            help='La operacion 0 (Mayusculizar), 1 (minusculizar), 5(medir perfomance)')
+            choices=[0,1,2,3,4,5,6],
+            help='La operacion 0 (Mayusculizar), 1 (minusculizar), 2 (Stack), 3 (Heap), 4 (Estado), 5( medir perfomance), 6( medir tiempos de pulsacion)')
 
     return vars(parser.parse_args())
+
 
 #===============================================================================
     
@@ -114,6 +123,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 STX = 0x55
 ETX = 0xAA
+cantLineas=[3,3,1,1,0,4,1]
 
 args = obtener_argumentos_cli()
 
@@ -128,7 +138,7 @@ with open( (args['nombre_archivo']), 'rt') as archivo:
         cartel_de_envio(args)
         lineas_enviadas = enviar_archivo(archivo, puerto, args['operacion'])
         cartel_de_recepcion()
-        mostrar_respuestas(puerto, 4*lineas_enviadas)
+        mostrar_respuestas(puerto, (cantLineas[args['operacion']])*lineas_enviadas)
 
 #===============================================================================
 

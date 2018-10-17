@@ -52,4 +52,6 @@ static void tiemposToString(int pulsador){
 	printf("Tiempo de pulsacion la tecla %d: %ld mS.\n ",pulsador+1,tiempoPulsadores.tiemposFinalPulsadores[pulsador]-tiempoPulsadores.tiemposInicialPulsadores[pulsador]);
 }
 
-
+uint32_t getTiempoPulsador(int pulsador){
+	return tiempoPulsadores.tiemposFinalPulsadores[pulsador]-tiempoPulsadores.tiemposInicialPulsadores[pulsador];
+}
