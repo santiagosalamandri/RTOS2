@@ -16,4 +16,6 @@ void inicializarTiemposPulsadores();
 
 tiemposPulsadores_t* getTiemposPulsadores();
 
+uint32_t getTiempoPulsador(int pulsador);
+
 #endif /* BROADCAST_H_ */

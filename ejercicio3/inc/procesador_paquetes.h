@@ -14,7 +14,7 @@
 
 #define MAX_UINT32_STRING_LENGTH	10
 
-typedef enum { MAYUSCULA, MINUSCULA, STACK, HEAP, APP,PERFORMANCE} operacion_t;														// Operaciones disponibles
+typedef enum { MAYUSCULA, MINUSCULA, STACK, HEAP, APP,PERFORMANCE,TIEMPOPULSACION,OPERACIONESPERMITIDAS} operacion_t;														// Operaciones disponibles
 
 typedef enum { ESPERANDO_STX, ESPERANDO_OP, ESPERANDO_TAM, ESPERANDO_DATOS, ESPERANDO_ETX, COMPLETO } estado_proceso_rx_t;	// Estados disponibles
 

@@ -20,7 +20,7 @@ void mayusculizador_task(void* taskParmPtr)
 		xQueueSend(queTransmision, &mensajeEntreTareas, portMAX_DELAY);							// Encolar resultado
 		stackReport();																			// Reportar stack disponible
 		sizeReport();
-		timeReport();
+		//timeReport();
 	}
 }
 
