@@ -26,7 +26,6 @@ extern QueueHandle_t queMayusculizar;
 extern QueueHandle_t queMinusculizar;
 extern QueueHandle_t queTransmision;
 extern QueueHandle_t queMedirPerformance;
-extern QueueHandle_t queMensajes;
 
 typedef struct {
   uint8_t* buffer;
