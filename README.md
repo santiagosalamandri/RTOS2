@@ -34,6 +34,8 @@ mayusculizador_task(): Desencola de queMayusculizar, llama a mayusculizar(), enc
 
 mayusculizar(): Si los caracteres se encuentran entre a y z, resta la diferencia ASCII para pasarlos a entre A y Z.
 
+stackreport(): Calculo del stack disponible luego del procesamiento e impresión de resultados.
+
 # TP2 
 
 # TP3
