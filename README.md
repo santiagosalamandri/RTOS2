@@ -45,6 +45,31 @@ realizarOperacion():
 Estados de la maquina: MAYUSCULA,MINUSCULA,STACK,HEAP.
 
 # TP2 
+Colas: queMayusculizar,queMinusculizar,queTransmision,queMedirPerformance (Simplificacion en cantidad)
+
+Se añaden:
+
+performance_task_create(): Creacion de tarea de medicion de performance
+
+header_init(): Inicializacion de los valores de la estructura previa a enviarse. Incluye los tiempos.
+
+sizeReport(): Calculo e impresion de la memoria pedida vs la memoria necesaria para la estructura.
+
+timeReport(): Calculo e impresion de los resultados temporales
+
+performance_task(): Desencola de queMedirPerformance, mide el tiempo_de_fin, llama a performance(), encola en queTransmision, reporta stack, tamaño y tiempos.
+
+performance(): Idem mayusculizar().
+
+Se modifican:
+
+realizarOperacion(): Añadido el estado PERFORMANCE y la medicion de tiempos
+
+mayusculizador_task(): Añadida la llamada a timeReport()
+
+minusculizador_task(): Añadida la llamada a timeReport()
+
+
 
 
 
