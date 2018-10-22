@@ -1,13 +1,22 @@
-# RTOS2_CESE2018
+## RTOS2_CESE2018
 
 Repositorio con trabajos practicos de RTOS 2.
 
-# Condiciones de aprobacion
+## Condiciones de aprobacion
 
 https://docs.google.com/spreadsheets/d/1JzukJYtKw0y7-BZhlFbDcP16snVtVe4iEaZriVZ2zgk/edit?usp=sharing
 
 
-# Modificacion de SAPI_UART.c
+## Documentacion
+
+# TP1
+
+# TP2 
+
+# TP3
+
+
+## Modificacion de SAPI_UART.c
 
 sapi_uart.c MODIFICADA FUNCIONANDO:
 
