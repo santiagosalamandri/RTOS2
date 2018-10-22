@@ -36,7 +36,17 @@ mayusculizar(): Si los caracteres se encuentran entre a y z, resta la diferencia
 
 stackreport(): Calculo del stack disponible luego del procesamiento e impresión de resultados.
 
+procesarByteRecibido():
+Estados de la maquina: ESPERANDO_STX(inicial y por defecto),ESPERANDO_OP,ESPERANDO_TAM,ESPERANDO_DATOS,ESPERANDO_ETX.
+
+getPool(): Decide entre BLOQUE_POOL_CHICO,BLOQUE_POOL_MEDIANO y BLOQUE_POOL_GRANDE
+
+realizarOperacion():
+Estados de la maquina: MAYUSCULA,MINUSCULA,STACK,HEAP.
+
 # TP2 
+
+
 
 # TP3
 
