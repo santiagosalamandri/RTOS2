@@ -19,7 +19,7 @@ ESPERANDO_TAM: Calcula el tamaño necesario y si es posible, actualiza la estruc
 
 ESPERANDO_DATOS: Se guardan los datos en el pool pedido anteriormente y se pasa a ESPERANDO_ETX
 
-ESPERANDO_ETX: Se prende LED3, se actualiza el pool y los tiempos, se llama a realizarOperacion() y se pasa a ESPERANDO_STX
+ESPERANDO_ETX: Se prende LED3, se actualiza el pool y los tiempos, se llama a realizarOperacion() y pasa a ESPERANDO_STX
 
 MAYUSCULA: Se prende LED1, se calcula el tamaño total y se encola en queMayusculizar
 
