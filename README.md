@@ -10,6 +10,15 @@ https://docs.google.com/spreadsheets/d/1JzukJYtKw0y7-BZhlFbDcP16snVtVe4iEaZriVZ2
 ## Documentacion
 
 # TP1
+Colas : queMayusculizar,queMayusculizados,queMinusculizar,queMinusculizados,queEnvioUART
+
+pools_init(): Inicializacion de pools de memoria segun la capacidad requerida
+queues_init(): Inicializacion de colas a utilizar 
+pool_free(): Liberar la memoria del pool indicado
+heapReport():  Reporta inicialmente la cantidad de heap disponible
+uart_task_create(): Creacion de la tarea de manejo de UART
+mayusculizador_task_create(): Creacion de la tarea de mayusculizado
+minusculizador_task_create(): Creacionm de la tarea de minusculizado
 
 # TP2 
 
