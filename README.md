@@ -26,6 +26,14 @@ mayusculizador_task_create(): Creacion de la tarea de mayusculizado
 
 minusculizador_task_create(): Creacionm de la tarea de minusculizado
 
+minusculizador_task(): Desencola de queMinusculizar, llama a minusculizar(), encola en queEnvioUart, reporta stack.
+
+minusculizar(): Si los caracteres se encuentran entre A y Z, sumar la diferencia ASCII para pasarlos a entre a y z.
+
+mayusculizador_task(): Desencola de queMayusculizar, llama a mayusculizar(), encola en queEnvioUart, reporta stack.
+
+mayusculizar(): Si los caracteres se encuentran entre a y z, resta la diferencia ASCII para pasarlos a entre A y Z.
+
 # TP2 
 
 # TP3
