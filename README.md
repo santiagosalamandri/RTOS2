@@ -9,6 +9,28 @@ https://docs.google.com/spreadsheets/d/1JzukJYtKw0y7-BZhlFbDcP16snVtVe4iEaZriVZ2
 
 ## Documentacion
 
+# Estados
+
+ESPERANDO_STX: Espera caracter STX, guarda el mismo en estructura, actualiza tiempos y pasa a ESPERANDO_OP
+
+ESPERANDO_OP: Espera operacion y procede según corresponda, guardando la misma en estructura, actualizando tiempo y pasando a 
+
+ESPERANDO_TAM: Calcula el tamaño necesario y si es posible, actualiza la estructura, los tiempos y pasa a ESPERANDO_DATOS. Si no se puede reservar la memoria se pasa a ESPERANDO_STX, descartando todo lo previo.
+
+ESPERANDO_DATOS: Se guardan los datos en el pool pedido anteriormente y se pasa a ESPERANDO_ETX
+
+ESPERANDO_ETX: Se prende LED3, se actualiza el pool y los tiempos, se llama a realizarOperacion() y se pasa a ESPERANDO_STX
+
+MAYUSCULA: Se prende LED1, se calcula el tamaño total y se encola en queMayusculizar
+
+MINUSCULA: Se prende LED2, se calcula el tamaño total y se encola en queMinusculizar
+
+STACK: Se calcula el stack y se encola en queTransmision
+
+HEAP: Se calcula el heap y se encola en queTransmision
+
+PERFORMANCE: Se prende LED3, se calcula el tamaño total y se encola en queMedirPerformance
+
 # TP1
 Colas : queMayusculizar,queMayusculizados,queMinusculizar,queMinusculizados,queEnvioUART
 
